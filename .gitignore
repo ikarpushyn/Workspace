@@ -1,0 +1,54 @@
+# General system files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+~$*
+*.lnk
+
+# Logs and cache
+*.log
+*.tmp
+*.temp
+*.cache
+
+# Environment folders
+node_modules/
+vendor/
+.env
+.env.local
+.env*.local
+
+# Binaries and compiled files
+*.exe
+*.dll
+*.so
+*.pyc
+__pycache__/
+*.class
+bin/
+obj/
+
+# IDE/Editor specific
+.idea/
+.vscode/
+*.suo
+*.user
+*.sln.docstates
+
+# Build systems
+dist/
+build/
+out/
+*.min.js
+*.min.css
+
+# OS-specific
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+[Tt]humbs.db
+Desktop.ini
