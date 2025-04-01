@@ -1,69 +1,99 @@
-score = 0
+--[[ 
+  Аналог "use strict" в JavaScript: 
+  всегда объявляйте переменные через "local", чтобы избежать глобальных утечек.
+]] function love.load()
+    -- Таблица для хранения всех юнитов (аналог массива объектов в JS)
+    local units = {}
 
-knight = {
-    x = 100,
-    y = 200,
-    speed = 200,
-    health = 150,
-    radius = 100,
-    sprite = love.graphics.newImage("assets/sprites/knight.png")
-}
-target = {
-    size = 20,
-    x = math.random(50, love.graphics.getWidth() - 50),
-    y = math.random(50, love.graphics.getHeight() - 50)
-}
+    -- Базовые параметры игры
+    game = {
+        wave = 1,
+        waveTimer = 0,
+        waveInterval = 5, -- Упростим до 5 секунд для теста
+        spawnPoint = {
+            x = 50,
+            y = 300
+        }, -- Точка спавна юнитов
+        basePosition = {
+            x = 700,
+            y = 300
+        } -- Цель для атаки
+    }
 
-function love.load() -- Инициализация ресурсов
-    -- Загрузка спрайтов, звуков
+    -- Создаем двух юнитов (пока без спрайтов)
+    -- Это как объявить объекты в JS: { type: 'knight', x: 100, ... }
+    units[1] = {
+        type = "knight",
+        x = game.spawnPoint.x,
+        y = game.spawnPoint.y,
+        speed = 60,
+        health = 100
+    }
+
+    units[2] = {
+        type = "archer",
+        x = game.spawnPoint.x,
+        y = game.spawnPoint.y + 50, -- Смещение, чтобы юниты не накладывались
+        speed = 80,
+        health = 70
+    }
+
+    -- Сохраняем юниты в глобальную переменную (временно)
+    game.units = units
 end
 
-function love.update(dt) -- Обновление логики (dt = время с последнего кадра)
-    -- Движение юнитов, таймеры
+function love.update(dt)
+    -- Обновляем таймер волны
+    game.waveTimer = game.waveTimer + dt
 
-    -- тест управление на стрелочки 
-    if love.keyboard.isDown("right") then
-        knight.x = knight.x + knight.speed * dt
-    end
-    if love.keyboard.isDown("left") then
-        knight.x = knight.x - knight.speed * dt
-    end
-    if love.keyboard.isDown("down") then
-        knight.y = knight.y + knight.speed * dt
-    end
-    if love.keyboard.isDown("up") then
-        knight.y = knight.y - knight.speed * dt
+    -- Спавн новой волны
+    if game.waveTimer >= game.waveInterval then
+        spawnWave()
+        game.waveTimer = 0
+        game.wave = game.wave + 1
     end
 
-    -- Проверка столкновения игрока с целью
-    local dx = knight.x - target.x
-    local dy = knight.y - target.y
-    local distance = math.sqrt(dx * dx + dy * dy)
+    -- Движение всех юнитов к базе
+    for i, unit in ipairs(game.units) do
+        -- Рассчитываем направление
+        local dx = game.basePosition.x - unit.x
+        local dy = game.basePosition.y - unit.y
+        local distance = math.sqrt(dx ^ 2 + dy ^ 2)
 
-    if distance < knight.radius + target.size / 2 then
-        score = score + 1
-        -- Перемещаем цель в случайное место
-        target.x = math.random(50, love.graphics.getWidth() - 50)
-        target.y = math.random(50, love.graphics.getHeight() - 50)
+        -- Нормализуем вектор (аналог dx / distance в JS)
+        if distance > 0 then
+            unit.x = unit.x + (dx / distance) * unit.speed * dt
+            unit.y = unit.y + (dy / distance) * unit.speed * dt
+        end
     end
-
 end
 
-function love.draw() -- Отрисовка
-    -- Рисуем фон, юнитов, UI
+function love.draw()
+    -- Рисуем базу
+    love.graphics.rectangle("fill", game.basePosition.x, game.basePosition.y, 50, 50)
 
-    -- Выводим счёт
-    love.graphics.print("Count: " .. score, 10, 10)
+    -- Рисуем юнитов
+    for i, unit in ipairs(game.units) do
+        love.graphics.setColor(1, 1, 1) -- Белый цвет
+        love.graphics.rectangle("fill", unit.x, unit.y, 30, 30) -- Квадрат вместо спрайта
+        love.graphics.print(unit.type, unit.x, unit.y - 20) -- Текст с типом юнита
+    end
 
-    -- Рисуем игрока (knight)
-    love.graphics.draw(knight.sprite, knight.x, knight.y)
-
-    -- Рисуем цель (красный квадрат)
-    love.graphics.setColor(1, 0, 0)
-    love.graphics.rectangle("fill", target.x - target.size / 2, target.y - target.size / 2, target.size, target.size)
-
-    -- Сбрасываем цвет для остальных элементов
-    love.graphics.setColor(1, 1, 1)
-
+    -- UI: Таймер волны
+    love.graphics.print("Wave: " .. game.wave, 10, 10)
+    love.graphics.print("Next wave in: " .. math.floor(game.waveInterval - game.waveTimer), 10, 30)
 end
 
+-- Кастомная функция для спавна волны
+function spawnWave()
+    -- Добавляем новых юнитов (пока без баланса)
+    for i = 1, 2 do
+        table.insert(game.units, {
+            type = "knight",
+            x = game.spawnPoint.x,
+            y = game.spawnPoint.y + i * 60, -- Смещение по Y
+            speed = 60,
+            health = 100
+        })
+    end
+end
