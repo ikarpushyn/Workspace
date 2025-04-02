@@ -52,6 +52,10 @@ function love.load()
             height = 30,
             color = {0.7, 0.2, 0.2}
         },
+        sprites = { -- Добавляем спрайты
+            knight = love.graphics.newImage("assets/sprites/knight.png")
+
+        },
         gameOver = false -- Флаг окончания игры
     }
 
@@ -243,7 +247,7 @@ function love.draw()
             love.graphics.setColor(0.8, 0.8, 0.8)
             love.graphics.line(unit.x + 30, unit.y, unit.x + 30 - bowOffset, unit.y + 15, unit.x + 30, unit.y + 30)
         else
-            love.graphics.rectangle("fill", unit.x, unit.y, 30, 30)
+            love.graphics.draw(game.sprites.knight, unit.x, unit.y)
         end
         love.graphics.setColor(1, 1, 1)
         love.graphics.print(unit.type, unit.x, unit.y - 20)
