@@ -14,11 +14,11 @@ function love.load()
             y = 300
         },
         base = {
-            health = 1000, -- Здоровье цитадели
+            health = 1000,
             maxHealth = 1000,
             attackTimer = 0,
-            attackInterval = 1, -- Цитадель стреляет раз в секунду
-            projectiles = {} -- Снаряды цитадели
+            attackInterval = 1,
+            projectiles = {}
         },
         field = {
             x = 20,
@@ -27,7 +27,24 @@ function love.load()
             height = 728,
             color = {0.15, 0.15, 0.15}
         },
-        projectiles = {} -- Снаряды юнитов
+        projectiles = {},
+        panel = { -- Добавляем панель управления
+            y = 650, -- Положение панели внизу экрана
+            height = 80,
+            buttons = {{
+                type = "knight",
+                x = 100,
+                width = 100,
+                height = 50,
+                color = {0.8, 0.8, 0.8}
+            }, {
+                type = "archer",
+                x = 250,
+                width = 100,
+                height = 50,
+                color = {0.3, 0.6, 0.3}
+            }}
+        }
     }
 
     units[1] = {
@@ -36,11 +53,12 @@ function love.load()
         y = game.spawnPoint.y,
         speed = 60,
         health = 100,
-        damage = 10, -- Урон ближнего боя
-        attackRange = 40, -- Очень близкая дистанция
+        damage = 10,
+        attackRange = 40,
         attackTimer = 0,
         attackInterval = 1,
-        color = {0.8, 0.8, 0.8}
+        color = {0.8, 0.8, 0.8},
+        isPlayerUnit = false -- Флаг для отличия юнитов игрока
     }
 
     units[2] = {
@@ -49,15 +67,16 @@ function love.load()
         y = game.spawnPoint.y + 50,
         speed = 80,
         health = 70,
-        damage = 5, -- Урон дальнего боя
-        attackRange = 200, -- Средняя дистанция
+        damage = 5,
+        attackRange = 200,
         attackTimer = 0,
         attackInterval = 1.5,
         color = {0.3, 0.6, 0.3},
         animation = {
             frame = 0,
             speed = 2
-        }
+        },
+        isPlayerUnit = false
     }
 
     game.units = units
@@ -79,21 +98,17 @@ function love.update(dt)
         local dy = game.basePosition.y - unit.y
         local distance = math.sqrt(dx ^ 2 + dy ^ 2)
 
-        -- Движение к базе, если не в зоне атаки
         if distance > unit.attackRange then
             unit.x = unit.x + (dx / distance) * unit.speed * dt
             unit.y = unit.y + (dy / distance) * unit.speed * dt
         end
 
-        -- Атака юнитов
         unit.attackTimer = unit.attackTimer + dt
         if unit.attackTimer >= unit.attackInterval then
             if distance <= unit.attackRange then
-                -- Наносим урон базе
                 game.base.health = game.base.health - unit.damage
                 unit.attackTimer = 0
             elseif unit.type == "archer" then
-                -- Лучник стреляет снарядом
                 table.insert(game.projectiles, {
                     x = unit.x + 15,
                     y = unit.y + 15,
@@ -108,7 +123,6 @@ function love.update(dt)
             end
         end
 
-        -- Анимация лучника
         if unit.type == "archer" then
             if unit.attackTimer < unit.attackInterval * 0.7 then
                 unit.animation.frame = math.min(unit.animation.frame + dt * unit.animation.speed, 0.5)
@@ -119,7 +133,6 @@ function love.update(dt)
             end
         end
 
-        -- Удаление юнита, если здоровье <= 0
         if unit.health <= 0 then
             table.remove(game.units, i)
         end
@@ -144,7 +157,6 @@ function love.update(dt)
     -- Оборона цитадели
     game.base.attackTimer = game.base.attackTimer + dt
     if game.base.attackTimer >= game.base.attackInterval and #game.units > 0 then
-        -- Находим ближайшего юнита
         local closestUnit = nil
         local minDistance = math.huge
         for _, unit in ipairs(game.units) do
@@ -191,9 +203,8 @@ function love.update(dt)
         end
     end
 
-    -- Проверка на поражение
     if game.base.health <= 0 then
-        game.base.health = 0 -- Чтобы не уйти в минус
+        game.base.health = 0
     end
 end
 
@@ -204,12 +215,12 @@ function love.draw()
     love.graphics.setColor(1, 1, 1)
     love.graphics.rectangle("line", game.field.x, game.field.y, game.field.width, game.field.height, 3)
 
-    -- База с учетом здоровья
+    -- База
     love.graphics.setColor(1, 0.2, 0.2)
     love.graphics.rectangle("fill", game.basePosition.x, game.basePosition.y, 50, 50)
     love.graphics.setColor(0.2, 0.8, 0.2)
-    love.graphics.rectangle("fill", game.basePosition.x, game.basePosition.y - 10, (game.base.health / 1000) * 50, 3)
-    -- Вывод здоровья цитадели над ней
+    love.graphics.rectangle("fill", game.basePosition.x, game.basePosition.y - 10,
+        (game.base.health / game.base.maxHealth) * 50, 3)
     love.graphics.setColor(1, 1, 1)
     love.graphics.print(game.base.health .. "/" .. game.base.maxHealth, game.basePosition.x, game.basePosition.y - 30)
 
@@ -228,9 +239,13 @@ function love.draw()
         end
         love.graphics.setColor(1, 1, 1)
         love.graphics.print(unit.type, unit.x, unit.y - 20)
-        love.graphics.setColor(0.2, 0.8, 0.2)
-        love.graphics.print(unit.health, unit.x, unit.y - 50)
-        love.graphics.rectangle("fill", unit.x, unit.y - 30, unit.health / 3, 3)
+        -- Полоска HP: синяя для юнитов игрока, зеленая для остальных
+        if unit.isPlayerUnit then
+            love.graphics.setColor(0, 0.5, 1) -- Синий цвет
+        else
+            love.graphics.setColor(0.2, 0.8, 0.2) -- Зеленый цвет
+        end
+        love.graphics.rectangle("fill", unit.x, unit.y - 10, unit.health / 3, 3)
     end
 
     -- Снаряды юнитов
@@ -243,6 +258,18 @@ function love.draw()
     for i, p in ipairs(game.base.projectiles) do
         love.graphics.setColor(p.color)
         love.graphics.line(p.x, p.y, p.x - 20, p.y)
+    end
+
+    -- Панель управления
+    love.graphics.setColor(0.2, 0.2, 0.2) -- Темно-серый фон панели
+    love.graphics.rectangle("fill", 0, game.panel.y, love.graphics.getWidth(), game.panel.height)
+
+    -- Кнопки
+    for _, button in ipairs(game.panel.buttons) do
+        love.graphics.setColor(button.color)
+        love.graphics.rectangle("fill", button.x, game.panel.y + 15, button.width, button.height)
+        love.graphics.setColor(1, 1, 1)
+        love.graphics.printf(button.type, button.x, game.panel.y + 30, button.width, "center")
     end
 
     -- UI
@@ -264,7 +291,58 @@ function spawnWave()
             attackRange = 40,
             attackTimer = 0,
             attackInterval = 1,
-            color = {0.8, 0.8, 0.8}
+            color = {0.8, 0.8, 0.8},
+            isPlayerUnit = false
         })
+    end
+end
+
+-- Функция спавна юнита игрока
+function spawnPlayerUnit(unitType)
+    local unit = {}
+    if unitType == "knight" then
+        unit = {
+            type = "knight",
+            x = game.spawnPoint.x,
+            y = game.spawnPoint.y,
+            speed = 60,
+            health = 100,
+            damage = 10,
+            attackRange = 40,
+            attackTimer = 0,
+            attackInterval = 1,
+            color = {0.8, 0.8, 0.8},
+            isPlayerUnit = true
+        }
+    elseif unitType == "archer" then
+        unit = {
+            type = "archer",
+            x = game.spawnPoint.x,
+            y = game.spawnPoint.y,
+            speed = 80,
+            health = 70,
+            damage = 5,
+            attackRange = 200,
+            attackTimer = 0,
+            attackInterval = 1.5,
+            color = {0.3, 0.6, 0.3},
+            animation = {
+                frame = 0,
+                speed = 2
+            },
+            isPlayerUnit = true
+        }
+    end
+    table.insert(game.units, unit)
+end
+
+-- Обработка кликов мыши
+function love.mousepressed(x, y, button)
+    if button == 1 then -- Левая кнопка мыши
+        for _, btn in ipairs(game.panel.buttons) do
+            if x >= btn.x and x <= btn.x + btn.width and y >= game.panel.y + 15 and y <= game.panel.y + 15 + btn.height then
+                spawnPlayerUnit(btn.type)
+            end
+        end
     end
 end
