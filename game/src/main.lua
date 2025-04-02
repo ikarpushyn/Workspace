@@ -28,8 +28,8 @@ function love.load()
             color = {0.15, 0.15, 0.15}
         },
         projectiles = {},
-        panel = { -- Добавляем панель управления
-            y = 650, -- Положение панели внизу экрана
+        panel = {
+            y = 650,
             height = 80,
             buttons = {{
                 type = "knight",
@@ -44,7 +44,15 @@ function love.load()
                 height = 50,
                 color = {0.3, 0.6, 0.3}
             }}
-        }
+        },
+        resetButton = {
+            x = 900,
+            y = 10,
+            width = 80,
+            height = 30,
+            color = {0.7, 0.2, 0.2}
+        },
+        gameOver = false -- Флаг окончания игры
     }
 
     units[1] = {
@@ -58,7 +66,7 @@ function love.load()
         attackTimer = 0,
         attackInterval = 1,
         color = {0.8, 0.8, 0.8},
-        isPlayerUnit = false -- Флаг для отличия юнитов игрока
+        isPlayerUnit = false
     }
 
     units[2] = {
@@ -83,6 +91,10 @@ function love.load()
 end
 
 function love.update(dt)
+    if game.gameOver then
+        return -- Прекращаем обновление игры, если она завершена
+    end
+
     game.waveTimer = game.waveTimer + dt
 
     if game.waveTimer >= game.waveInterval then
@@ -91,7 +103,6 @@ function love.update(dt)
         game.wave = game.wave + 1
     end
 
-    -- Обновление юнитов
     for i = #game.units, 1, -1 do
         local unit = game.units[i]
         local dx = game.basePosition.x - unit.x
@@ -138,7 +149,6 @@ function love.update(dt)
         end
     end
 
-    -- Обновление снарядов юнитов
     for i = #game.projectiles, 1, -1 do
         local p = game.projectiles[i]
         local dx = p.targetX - p.x
@@ -154,7 +164,6 @@ function love.update(dt)
         end
     end
 
-    -- Оборона цитадели
     game.base.attackTimer = game.base.attackTimer + dt
     if game.base.attackTimer >= game.base.attackInterval and #game.units > 0 then
         local closestUnit = nil
@@ -181,7 +190,6 @@ function love.update(dt)
         end
     end
 
-    -- Обновление снарядов цитадели
     for i = #game.base.projectiles, 1, -1 do
         local p = game.base.projectiles[i]
         local dx = p.targetX - p.x
@@ -203,8 +211,10 @@ function love.update(dt)
         end
     end
 
+    -- Проверка на окончание игры
     if game.base.health <= 0 then
         game.base.health = 0
+        game.gameOver = true
     end
 end
 
@@ -215,7 +225,6 @@ function love.draw()
     love.graphics.setColor(1, 1, 1)
     love.graphics.rectangle("line", game.field.x, game.field.y, game.field.width, game.field.height, 3)
 
-    -- База
     love.graphics.setColor(1, 0.2, 0.2)
     love.graphics.rectangle("fill", game.basePosition.x, game.basePosition.y, 50, 50)
     love.graphics.setColor(0.2, 0.8, 0.2)
@@ -224,7 +233,6 @@ function love.draw()
     love.graphics.setColor(1, 1, 1)
     love.graphics.print(game.base.health .. "/" .. game.base.maxHealth, game.basePosition.x, game.basePosition.y - 30)
 
-    -- Юниты
     for i, unit in ipairs(game.units) do
         love.graphics.setColor(unit.color)
         if unit.type == "archer" then
@@ -239,32 +247,27 @@ function love.draw()
         end
         love.graphics.setColor(1, 1, 1)
         love.graphics.print(unit.type, unit.x, unit.y - 20)
-        -- Полоска HP: синяя для юнитов игрока, зеленая для остальных
         if unit.isPlayerUnit then
-            love.graphics.setColor(0, 0.5, 1) -- Синий цвет
+            love.graphics.setColor(0, 0.5, 1)
         else
-            love.graphics.setColor(0.2, 0.8, 0.2) -- Зеленый цвет
+            love.graphics.setColor(0.2, 0.8, 0.2)
         end
         love.graphics.rectangle("fill", unit.x, unit.y - 10, unit.health / 3, 3)
     end
 
-    -- Снаряды юнитов
     for i, p in ipairs(game.projectiles) do
         love.graphics.setColor(p.color)
         love.graphics.line(p.x, p.y, p.x + 20, p.y)
     end
 
-    -- Снаряды цитадели
     for i, p in ipairs(game.base.projectiles) do
         love.graphics.setColor(p.color)
         love.graphics.line(p.x, p.y, p.x - 20, p.y)
     end
 
-    -- Панель управления
-    love.graphics.setColor(0.2, 0.2, 0.2) -- Темно-серый фон панели
+    love.graphics.setColor(0.2, 0.2, 0.2)
     love.graphics.rectangle("fill", 0, game.panel.y, love.graphics.getWidth(), game.panel.height)
 
-    -- Кнопки
     for _, button in ipairs(game.panel.buttons) do
         love.graphics.setColor(button.color)
         love.graphics.rectangle("fill", button.x, game.panel.y + 15, button.width, button.height)
@@ -272,11 +275,27 @@ function love.draw()
         love.graphics.printf(button.type, button.x, game.panel.y + 30, button.width, "center")
     end
 
-    -- UI
+    love.graphics.setColor(game.resetButton.color)
+    love.graphics.rectangle("fill", game.resetButton.x, game.resetButton.y, game.resetButton.width,
+        game.resetButton.height)
+    love.graphics.setColor(1, 1, 1)
+    love.graphics.printf("Reset", game.resetButton.x, game.resetButton.y + 10, game.resetButton.width, "center")
+
     love.graphics.setColor(1, 1, 1)
     love.graphics.print("Wave: " .. game.wave, 10, 10)
     love.graphics.print("Next wave in: " .. math.floor(game.waveInterval - game.waveTimer), 10, 30)
     love.graphics.print("Base Health: " .. game.base.health .. "/" .. game.base.maxHealth, 10, 50)
+
+    -- Отображение победы
+    if game.gameOver then
+        love.graphics.setColor(0, 0, 0, 0.7) -- Полупрозрачный черный фон
+        love.graphics.rectangle("fill", 0, 0, love.graphics.getWidth(), love.graphics.getHeight())
+        love.graphics.setColor(0, 1, 0) -- Зеленый цвет текста
+        love.graphics.printf("Victory! You destroyed the citadel!", 0, love.graphics.getHeight() / 2 - 20,
+            love.graphics.getWidth(), "center")
+        love.graphics.printf("Click Reset to play again", 0, love.graphics.getHeight() / 2 + 20,
+            love.graphics.getWidth(), "center")
+    end
 end
 
 function spawnWave()
@@ -297,7 +316,6 @@ function spawnWave()
     end
 end
 
--- Функция спавна юнита игрока
 function spawnPlayerUnit(unitType)
     local unit = {}
     if unitType == "knight" then
@@ -336,13 +354,62 @@ function spawnPlayerUnit(unitType)
     table.insert(game.units, unit)
 end
 
--- Обработка кликов мыши
 function love.mousepressed(x, y, button)
-    if button == 1 then -- Левая кнопка мыши
-        for _, btn in ipairs(game.panel.buttons) do
-            if x >= btn.x and x <= btn.x + btn.width and y >= game.panel.y + 15 and y <= game.panel.y + 15 + btn.height then
-                spawnPlayerUnit(btn.type)
+    if button == 1 then
+        if not game.gameOver then -- Спавн юнитов только если игра не окончена
+            for _, btn in ipairs(game.panel.buttons) do
+                if x >= btn.x and x <= btn.x + btn.width and y >= game.panel.y + 15 and y <= game.panel.y + 15 +
+                    btn.height then
+                    spawnPlayerUnit(btn.type)
+                end
             end
         end
+        -- Кнопка Reset работает всегда
+        if x >= game.resetButton.x and x <= game.resetButton.x + game.resetButton.width and y >= game.resetButton.y and
+            y <= game.resetButton.y + game.resetButton.height then
+            resetGame()
+        end
     end
+end
+
+function resetGame()
+    game.wave = 1
+    game.waveTimer = 0
+    game.base.health = game.base.maxHealth
+    game.base.attackTimer = 0
+    game.units = {}
+    game.projectiles = {}
+    game.base.projectiles = {}
+    game.gameOver = false -- Сбрасываем флаг окончания игры
+
+    game.units[1] = {
+        type = "knight",
+        x = game.spawnPoint.x,
+        y = game.spawnPoint.y,
+        speed = 60,
+        health = 100,
+        damage = 10,
+        attackRange = 40,
+        attackTimer = 0,
+        attackInterval = 1,
+        color = {0.8, 0.8, 0.8},
+        isPlayerUnit = false
+    }
+    game.units[2] = {
+        type = "archer",
+        x = game.spawnPoint.x,
+        y = game.spawnPoint.y + 50,
+        speed = 80,
+        health = 70,
+        damage = 5,
+        attackRange = 200,
+        attackTimer = 0,
+        attackInterval = 1.5,
+        color = {0.3, 0.6, 0.3},
+        animation = {
+            frame = 0,
+            speed = 2
+        },
+        isPlayerUnit = false
+    }
 end
