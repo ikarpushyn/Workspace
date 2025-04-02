@@ -15,6 +15,7 @@ function love.load()
         },
         base = {
             health = 1000, -- Здоровье цитадели
+            maxHealth = 1000,
             attackTimer = 0,
             attackInterval = 1, -- Цитадель стреляет раз в секунду
             projectiles = {} -- Снаряды цитадели
@@ -210,7 +211,7 @@ function love.draw()
     love.graphics.rectangle("fill", game.basePosition.x, game.basePosition.y - 10, (game.base.health / 1000) * 50, 3)
     -- Вывод здоровья цитадели над ней
     love.graphics.setColor(1, 1, 1)
-    love.graphics.print(game.base.health, game.basePosition.x, game.basePosition.y - 30)
+    love.graphics.print(game.base.health .. "/" .. game.base.maxHealth, game.basePosition.x, game.basePosition.y - 30)
 
     -- Юниты
     for i, unit in ipairs(game.units) do
@@ -228,7 +229,8 @@ function love.draw()
         love.graphics.setColor(1, 1, 1)
         love.graphics.print(unit.type, unit.x, unit.y - 20)
         love.graphics.setColor(0.2, 0.8, 0.2)
-        love.graphics.rectangle("fill", unit.x, unit.y - 10, unit.health / 3, 3)
+        love.graphics.print(unit.health, unit.x, unit.y - 50)
+        love.graphics.rectangle("fill", unit.x, unit.y - 30, unit.health / 3, 3)
     end
 
     -- Снаряды юнитов
@@ -247,7 +249,7 @@ function love.draw()
     love.graphics.setColor(1, 1, 1)
     love.graphics.print("Wave: " .. game.wave, 10, 10)
     love.graphics.print("Next wave in: " .. math.floor(game.waveInterval - game.waveTimer), 10, 30)
-    love.graphics.print("Base Health: " .. game.base.health, 10, 50)
+    love.graphics.print("Base Health: " .. game.base.health .. "/" .. game.base.maxHealth, 10, 50)
 end
 
 function spawnWave()
