@@ -208,6 +208,9 @@ function love.draw()
     love.graphics.rectangle("fill", game.basePosition.x, game.basePosition.y, 50, 50)
     love.graphics.setColor(0.2, 0.8, 0.2)
     love.graphics.rectangle("fill", game.basePosition.x, game.basePosition.y - 10, (game.base.health / 1000) * 50, 3)
+    -- Вывод здоровья цитадели над ней
+    love.graphics.setColor(1, 1, 1)
+    love.graphics.print(game.base.health, game.basePosition.x, game.basePosition.y - 30)
 
     -- Юниты
     for i, unit in ipairs(game.units) do
